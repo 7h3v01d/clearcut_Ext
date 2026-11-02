@@ -18,7 +18,7 @@ const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const manifest = JSON.parse(read('manifest.json'));
 const tick = (ms) => new Promise((r) => setTimeout(r, ms));
 
-test('manifest: MV3, every referenced file exists, MAIN world script is first and alone', () => {
+test('manifest: MV3, every referenced file exists, MAIN world scripts are the shield and bridge only', () => {
   assert.equal(manifest.manifest_version, 3);
   const files = [
     manifest.background.service_worker,
@@ -31,7 +31,12 @@ test('manifest: MV3, every referenced file exists, MAIN world script is first an
   for (const f of files) assert.ok(fs.existsSync(path.join(ROOT, f)), f);
   const main = manifest.content_scripts.filter((c) => c.world === 'MAIN');
   assert.equal(main.length, 1);
-  assert.deepEqual(main[0].js, ['src/main/data-shield.js']);
+  assert.deepEqual(main[0].js, ['src/main/data-shield.js', 'src/main/player-bridge.js']);
+  // Isolated-world load order: libraries before the modules that use them, main.js last.
+  const iso = manifest.content_scripts.find((c) => !c.world).js;
+  assert.equal(iso.at(-1), 'src/content/main.js');
+  assert.ok(iso.indexOf('src/content/toast.js') < iso.indexOf('src/content/sponsor-skipper.js'));
+  assert.ok(iso.indexOf('src/content/rpc.js') < iso.indexOf('src/content/main.js'));
   assert.equal(main[0].run_at, 'document_start');
   for (const c of manifest.content_scripts) assert.deepEqual(c.matches, ['*://www.youtube.com/*']);
 });
@@ -86,10 +91,12 @@ function loadServiceWorker({ fetchImpl } = {}) {
     storage: {
       local: {
         get: async (k) => {
+          if (k == null) return JSON.parse(JSON.stringify(store));
           const keys = typeof k === 'string' ? [k] : k;
           return Object.fromEntries(keys.map((x) => [x, store[x] === undefined ? undefined : JSON.parse(JSON.stringify(store[x]))]));
         },
-        set: async (o) => { Object.assign(store, JSON.parse(JSON.stringify(o))); }
+        set: async (o) => { Object.assign(store, JSON.parse(JSON.stringify(o))); },
+        remove: async (k) => { for (const x of [].concat(k)) delete store[x]; }
       },
       onChanged: { addListener() {} }
     },
@@ -98,7 +105,8 @@ function loadServiceWorker({ fetchImpl } = {}) {
       onStartup: { addListener() {} },
       onMessage: { addListener: (fn) => onMessage.push(fn) }
     },
-    declarativeNetRequest: { updateEnabledRulesets: async (o) => { rulesetCalls.push(o); } }
+    declarativeNetRequest: { updateEnabledRulesets: async (o) => { rulesetCalls.push(o); } },
+    commands: { onCommand: { addListener: (fn) => { chrome._command = fn; } } }
   };
   const ctx = vm.createContext({
     chrome, fetch: fetchImpl, AbortController, setTimeout, clearTimeout, TextEncoder, URL,

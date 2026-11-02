@@ -76,6 +76,25 @@
     ]
   };
 
+  // Focus mode (watch pages only — main.js tags <html data-clearcut-page="watch">).
+  const W = 'html[data-clearcut-page="watch"]';
+  const FOCUS_HIDE = [
+    `${W} ytd-watch-flexy #secondary`,
+    `${W} ytd-watch-flexy #comments`,
+    `${W} ytd-watch-flexy ytd-merch-shelf-renderer`,
+    `${W} ytd-watch-flexy #ticket-shelf`,
+    `${W} ytd-watch-flexy ytd-watch-next-secondary-results-renderer`,
+    `${W} ytd-watch-flexy #clarify-box`,
+    `${W} tp-yt-app-drawer#guide`,
+    `${W} ytd-mini-guide-renderer`
+  ];
+  // Masthead slides away and comes back when the pointer touches the top edge.
+  const FOCUS_RULES = [
+    `${W} #masthead-container{transform:translateY(calc(-100% + 6px));opacity:0;transition:transform .15s ease,opacity .15s ease}`,
+    `${W} #masthead-container:hover,${W} #masthead-container:focus-within{transform:none;opacity:1}`,
+    `${W} ytd-page-manager#page-manager{margin-top:6px!important}`
+  ];
+
   const HIDE = '{display:none!important}';
 
   /** Build the stylesheet for the given (merged) settings. */
@@ -87,9 +106,11 @@
     for (const [key, sels] of Object.entries(DISTRACTIONS)) {
       if (settings[key]) groups.push(sels);
     }
+    if (settings.focusMode) groups.push(FOCUS_HIDE);
     // One rule per selector: an unsupported selector then only drops itself.
     const rules = [];
     for (const g of groups) for (const s of g) rules.push(s + HIDE);
+    if (settings.focusMode) rules.push(...FOCUS_RULES);
     if (settings.hideHomeFeed) {
       rules.push(
         'ytd-browse[page-subtype="home"] #primary::before{' +
@@ -104,7 +125,7 @@
   // slots exist as empty placeholders on every page and would read as leaks.
   const AD_COUNT_SELECTOR = AD_ELEMENTS.filter((s) => s.startsWith('ytd-')).join(',');
 
-  const api = { AD_ELEMENTS, AD_SHELLS, WALL, DISTRACTIONS, AD_COUNT_SELECTOR, buildCss };
+  const api = { AD_ELEMENTS, AD_SHELLS, WALL, DISTRACTIONS, FOCUS_HIDE, FOCUS_RULES, AD_COUNT_SELECTOR, buildCss };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (globalThis.Clearcut = globalThis.Clearcut || {}).selectors = api;
 })();

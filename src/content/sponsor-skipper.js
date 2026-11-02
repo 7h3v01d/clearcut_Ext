@@ -2,24 +2,11 @@
 // Copyright 2026 Leon Priest (GitHub: 7h3v01d)
 //
 // Sponsor-segment skipping (SponsorBlock community data). Auto-skips enabled
-// categories and shows a small toast with Undo, which seeks back and leaves
-// that segment alone for the rest of the video.
+// categories and shows a toast with Undo, which seeks back and leaves that
+// segment alone for the rest of the video.
 
 (function () {
   'use strict';
-
-  const TOAST_MS = 5000;
-
-  const TOAST_CSS = `
-    :host{all:initial}
-    .t{position:absolute;right:16px;bottom:72px;z-index:70;display:flex;align-items:center;gap:12px;
-       padding:8px 12px;background:#11161d;border:1px solid #1e2831;border-left:2px solid #2fd6c3;
-       color:#c8d3da;font:12px "JetBrains Mono",Consolas,monospace;letter-spacing:.02em;
-       box-shadow:0 4px 18px rgba(0,0,0,.45);pointer-events:auto}
-    .k{color:#2fd6c3;text-transform:uppercase;font-size:10px}
-    button{all:unset;cursor:pointer;color:#ffb454;padding:2px 6px;border:1px solid #1e2831}
-    button:hover{background:#1e2831}
-  `;
 
   function createSponsorSkipper(opts) {
     const doc = opts.doc;
@@ -30,14 +17,13 @@
     const getSettings = opts.getSettings;
     const isInAd = opts.isInAd || (() => false);
     const labels = opts.labels || {};
+    const toaster = opts.toaster || globalThis.Clearcut.toast.createToaster({ doc, win });
 
     let videoId = null;
     let segments = [];
     let done = new Set();     // skipped or undone — never auto-skip again this video
     let generation = 0;
-    let toastHost = null;
-    let toastTimer = null;
-    let lastUndo = null;
+    let lastToast = null; // handle of our own toast, while it is showing
 
     const active = () => {
       const s = getSettings();
@@ -83,48 +69,23 @@
 
     /** Seek back to before the last skip; that segment stays un-skipped. */
     function undoLast() {
-      const fn = lastUndo;
-      lastUndo = null;
-      if (fn) fn();
-      return !!fn;
+      const t = lastToast;
+      lastToast = null;
+      return t ? t.runAction() : false;
     }
 
     function hideToast() {
-      if (toastTimer) { win.clearTimeout(toastTimer); toastTimer = null; }
-      if (toastHost) { toastHost.remove(); toastHost = null; }
-      lastUndo = null;
+      if (lastToast) { lastToast = null; toaster.hide(); }
     }
 
     function showToast(v, seg, from) {
-      hideToast();
-      const player = v.closest('#movie_player');
-      if (!player) return;
-      toastHost = doc.createElement('div');
-      toastHost.setAttribute('data-clearcut', 'toast');
-      const root = toastHost.attachShadow({ mode: 'closed' });
-      const style = doc.createElement('style');
-      style.textContent = TOAST_CSS;
-      const box = doc.createElement('div');
-      box.className = 't';
-      const k = doc.createElement('span');
-      k.className = 'k';
-      k.textContent = 'Clearcut';
-      const msg = doc.createElement('span');
-      msg.textContent = `Skipped ${labels[seg.category] || seg.category}`;
-      const undo = doc.createElement('button');
-      undo.textContent = 'Undo';
-      lastUndo = () => {
-        v.currentTime = Math.max(0, from - 0.5);
-        hideToast();
-      };
-      undo.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        undoLast();
+      const handle = toaster.show({
+        player: v.closest('#movie_player'),
+        message: `Skipped ${labels[seg.category] || seg.category}`,
+        action: { label: 'Undo', run: () => { v.currentTime = Math.max(0, from - 0.5); } },
+        onHide: () => { if (lastToast === handle) lastToast = null; }
       });
-      box.append(k, msg, undo);
-      root.append(style, box);
-      player.appendChild(toastHost);
-      toastTimer = win.setTimeout(hideToast, TOAST_MS);
+      lastToast = handle;
     }
 
     function start() {

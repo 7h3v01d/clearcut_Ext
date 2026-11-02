@@ -17,6 +17,21 @@
     { id: 'music_offtopic', label: 'Non-music in music videos' }
   ];
 
+  const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+
+  // '' = leave YouTube's choice alone; 'max' = best the video offers.
+  const QUALITIES = [
+    { id: 'max', label: 'Best available' },
+    { id: 'hd2160', label: '2160p' },
+    { id: 'hd1440', label: '1440p' },
+    { id: 'hd1080', label: '1080p' },
+    { id: 'hd720', label: '720p' },
+    { id: 'large', label: '480p' },
+    { id: 'medium', label: '360p' }
+  ];
+
+  const RESUME_MINUTES = [0, 5, 10, 20];
+
   const DEFAULT_SETTINGS = Object.freeze({
     enabled: true,
     // Ad ladder
@@ -43,8 +58,17 @@
     hideEndCards: true,
     hideHomeFeed: false,
     hideRelated: false,
-    disableAutoplay: false
+    disableAutoplay: false,
+    // Playback
+    defaultSpeed: 0,      // 0 = don't change
+    defaultQuality: '',   // '' = don't change
+    resumeEnabled: true,
+    resumeMinMinutes: 5,  // only remember videos at least this long
+    focusMode: false
   });
+
+  const isSpeed = (v) => v === 0 || SPEEDS.includes(v);
+  const isQuality = (v) => v === '' || QUALITIES.some((q) => q.id === v);
 
   /** Merge stored settings over defaults, ignoring unknown keys and wrong types. */
   function mergeSettings(stored) {
@@ -60,10 +84,22 @@
         out[key] = typeof src[key] === typeof def ? src[key] : def;
       }
     }
+    if (!isSpeed(out.defaultSpeed)) out.defaultSpeed = DEFAULT_SETTINGS.defaultSpeed;
+    if (!isQuality(out.defaultQuality)) out.defaultQuality = DEFAULT_SETTINGS.defaultQuality;
+    if (!RESUME_MINUTES.includes(out.resumeMinMinutes)) out.resumeMinMinutes = DEFAULT_SETTINGS.resumeMinMinutes;
     return out;
   }
 
-  const api = { DEFAULT_SETTINGS, SB_CATEGORIES, mergeSettings };
+  /** Sanitise one channel's stored preferences; null when there's nothing to keep. */
+  function cleanChannelPref(p) {
+    if (!p || typeof p !== 'object') return null;
+    const speed = isSpeed(p.speed) ? p.speed : 0;
+    const quality = isQuality(p.quality) ? p.quality : '';
+    if (!speed && !quality) return null;
+    return { name: typeof p.name === 'string' ? p.name.slice(0, 100) : '', speed, quality };
+  }
+
+  const api = { DEFAULT_SETTINGS, SB_CATEGORIES, SPEEDS, QUALITIES, RESUME_MINUTES, mergeSettings, cleanChannelPref, isSpeed, isQuality };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (globalThis.Clearcut = globalThis.Clearcut || {}).defaults = api;
 })();

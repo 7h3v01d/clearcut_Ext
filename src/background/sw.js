@@ -2,7 +2,8 @@
 // Copyright 2026 Leon Priest (GitHub: 7h3v01d)
 //
 // Service worker: settings defaults, network ruleset toggle, SponsorBlock
-// lookups (cached), and the health-log writer.
+// lookups (cached), the health-log writer, resume-position pruning and the
+// focus-mode keyboard shortcut.
 
 importScripts('../lib/defaults.js', '../lib/sponsor.js', '../lib/health.js');
 
@@ -26,15 +27,49 @@ async function syncRuleset(settings) {
   } catch (_) { /* ignore */ }
 }
 
+// ---- resume positions: keep the newest RESUME_KEEP, drop anything stale ---
+const RESUME_KEEP = 300;
+const RESUME_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+
+async function pruneResume(now) {
+  const all = await chrome.storage.local.get(null);
+  const t = typeof now === 'number' ? now : Date.now();
+  const entries = Object.entries(all)
+    .filter(([k]) => k.startsWith('r:'))
+    .map(([k, v]) => [k, v && typeof v.at === 'number' ? v.at : 0]);
+  entries.sort((a, b) => b[1] - a[1]);
+  const drop = entries.filter(([, at], i) => i >= RESUME_KEEP || t - at > RESUME_MAX_AGE_MS).map(([k]) => k);
+  if (drop.length) await chrome.storage.local.remove(drop);
+  return drop.length;
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   const settings = await getSettings();
   await chrome.storage.local.set({ settings });
   const { stats } = await chrome.storage.local.get('stats');
   if (!stats) await chrome.storage.local.set({ stats: CC.health.emptyStats() });
   await syncRuleset(settings);
+  await pruneResume();
 });
 
-chrome.runtime.onStartup.addListener(async () => syncRuleset(await getSettings()));
+chrome.runtime.onStartup.addListener(async () => {
+  await syncRuleset(await getSettings());
+  await pruneResume();
+});
+
+// ---- keyboard shortcut ------------------------------------------------------
+async function toggleSetting(key) {
+  const settings = await getSettings();
+  settings[key] = !settings[key];
+  await chrome.storage.local.set({ settings });
+  return settings[key];
+}
+
+if (chrome.commands && chrome.commands.onCommand) {
+  chrome.commands.onCommand.addListener((command) => {
+    if (command === 'toggle-focus') toggleSetting('focusMode');
+  });
+}
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.settings) syncRuleset(CC.defaults.mergeSettings(changes.settings.newValue));
@@ -96,6 +131,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sponsorSegments(id, cats)
       .then((segments) => sendResponse({ ok: true, segments }))
       .catch((e) => sendResponse({ ok: false, error: String(e && e.message || e), segments: [] }));
+    return true;
+  }
+
+  if (msg.type === 'resume:clear') {
+    chrome.storage.local.get(null)
+      .then((all) => chrome.storage.local.remove(Object.keys(all).filter((k) => k.startsWith('r:'))))
+      .then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
     return true;
   }
 

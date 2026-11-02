@@ -16,6 +16,8 @@ Each layer catches what the one above misses.
 | **L3 · Neutralise** | If an ad still plays (including server-stitched ones the player still flags): mute, 16×, seek to end, click Skip. Restores your mute state and speed afterwards. | `src/content/player-guard.js` |
 | **L4 · Health** | Tracks per video which layer caught what and tells you which layer is failing. | `src/lib/health.js` |
 
+The player's own methods (quality, channel info) only exist in the page's JavaScript world, so `src/main/player-bridge.js` answers small RPC requests from the content script. Nothing is exposed on `window`.
+
 ### Reading the health status
 
 | Status | Meaning | Where to look |
@@ -28,10 +30,16 @@ Each layer catches what the one above misses.
 
 **Copy diagnostics** in the popup puts settings, status and the event log on your clipboard for debugging.
 
-## Expansions in v0.1
+## Expansions
 
 - **Sponsor skipping:** uses SponsorBlock community data. Auto-skips the categories you pick and shows a toast with **Undo**; an undone segment stays un-skipped for that video. Lookups send only the first 4 hex chars of `sha256(videoId)`, never the video ID.
 - **Distraction control:** hide Shorts, comments, end-screen cards, the home feed or related videos, and turn off autoplay. Autoplay is switched off once per video, so if you turn it back on, Clearcut won't fight you.
+
+### Added in v0.2
+
+- **Per-channel speed and quality:** open the popup on a video and **This channel** lets you pin a speed and quality for that channel. Channels without a pin use the global defaults under **Playback**, and "Don't change" leaves YouTube alone. Prefs apply once per video, after any pre-roll, so a change you make mid-video sticks. Quality is the best level the video offers that isn't above your target.
+- **Resume position:** videos at least as long as your minimum (default 5 min) remember where you stopped. A **Start over** toast appears when one resumes. Clearcut skips resuming when the link has a start time (`&t=`) or YouTube has already resumed. Finished videos are forgotten, and it keeps the newest 300 positions for at most 90 days. **Forget all** clears them.
+- **Focus mode** (<kbd>Alt+Shift+F</kbd>, rebindable at `vivaldi://extensions/shortcuts`): theatre mode once per video, related videos, comments, the guide and merch hidden, and the top bar slides away until you touch the top edge. Watch pages only.
 
 ## Install (unpacked)
 
@@ -48,7 +56,7 @@ npm install
 test.bat
 ```
 
-47 tests: unit tests (pruning, selectors, SponsorBlock logic, health status), jsdom integration tests (layer 3, wall dismissal, sponsor skip/undo, a full content-script boot, the popup) and a service worker test with a stubbed `chrome` API.
+77 tests: unit tests (pruning, selectors, SponsorBlock logic, health status, quality selection), jsdom integration tests (layer 3, wall dismissal, sponsor skip/undo, playback memory and resume, focus mode, player bridge RPC, a full content-script boot, the popup) and service worker tests with a stubbed `chrome` API.
 
 `package.bat` builds `dist\clearcut-<version>.zip` containing only the extension files.
 
@@ -58,14 +66,17 @@ test.bat
 manifest.json
 rules/ad-network.json        L1 network rules
 src/main/data-shield.js      L1 data shield (MAIN world, self-contained)
+src/main/player-bridge.js    player RPC: channel context, quality (MAIN world)
 src/lib/                     defaults, selectors, sponsor, health (pure, testable)
-src/content/                 player-guard (L3 + wall + autoplay), sponsor-skipper, main (wiring)
-src/background/sw.js         settings, ruleset toggle, SponsorBlock fetch/cache, health writer
-src/popup/                   status, counters, toggles
+src/content/                 player-guard (L3 + wall + autoplay + theatre), sponsor-skipper,
+                             playback (speed/quality/resume), toast, rpc, main (wiring)
+src/background/sw.js         settings, ruleset toggle, SponsorBlock fetch/cache, health writer,
+                             resume pruning, focus-mode shortcut
+src/popup/                   status, counters, This channel, toggles
 test/                        node:test + jsdom
 ```
 
-## Known limits (v0.1)
+## Known limits
 
 - `www.youtube.com` only: no embeds on other sites, `m.youtube.com` or YouTube Music.
 - The MAIN↔isolated bridge uses `postMessage`, which the page can observe.

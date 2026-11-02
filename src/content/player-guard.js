@@ -38,6 +38,7 @@
     let adStartedAt = 0;
     let adSeconds = 0;
     let autoplayHandledFor = null;
+    let theatreHandledFor = null;
 
     const on = (k) => {
       const s = getSettings();
@@ -141,12 +142,28 @@
       }
     }
 
+    // Focus mode: switch to theatre once per video; if you leave theatre, it stays left.
+    function handleTheatre() {
+      if (!on('focusMode')) return;
+      const id = getVideoId();
+      if (!id || theatreHandledFor === id) return;
+      const flexy = doc.querySelector('ytd-watch-flexy');
+      if (!flexy) return;
+      if (flexy.hasAttribute('theater') || flexy.hasAttribute('fullscreen')) { theatreHandledFor = id; return; }
+      const btn = doc.querySelector('#movie_player .ytp-size-button');
+      if (btn) {
+        theatreHandledFor = id;
+        try { btn.click(); } catch (_) { /* ignore */ }
+      }
+    }
+
     function scan() {
       if (!player || !player.isConnected) {
         const p = doc.getElementById('movie_player');
         if (p) attach(p);
       }
       handleAutoplay();
+      handleTheatre();
     }
 
     let pending = null;
@@ -174,7 +191,7 @@
       player = null;
     }
 
-    return { start, stop, evaluate, sweep, isInAd: () => inAd };
+    return { start, stop, evaluate, sweep, isInAd: () => inAd, adShowing: isAdShowing };
   }
 
   const api = { createPlayerGuard, SKIP_BUTTONS };

@@ -1,4 +1,4 @@
-# Clearcut: real-browser soak checklist (v0.1.0)
+# Clearcut: real-browser soak checklist (v0.2.0)
 
 Run on Windows + Vivaldi (and Chrome). Before each pass, open the popup and **Reset stats**.
 
@@ -18,6 +18,16 @@ Run on Windows + Vivaldi (and Chrome). Before each pass, open the popup and **Re
 ## Distractions
 - [ ] Each toggle hides its target live, without a reload: Shorts (shelves + sidebar entry), comments, end cards, home feed (placeholder message shown), related videos.
 - [ ] Turn off autoplay: the autoplay switch goes off once on a video, and if you turn it back on it stays on.
+
+## Playback (v0.2)
+- [ ] Popup on a video shows **This channel** with the right channel name. Pin 1.5×, then open another video from that channel: it plays at 1.5× after any pre-roll.
+- [ ] With a channel pinned, a video from a different channel uses the global default (or is left alone on "Don't change").
+- [ ] Pin quality 1080p on a channel whose videos go to 4K: the video plays at 1080p (check *Stats for nerds*). With "Best available", it picks the top level.
+- [ ] Change speed mid-video: the change sticks, and Clearcut doesn't set it back.
+- [ ] Watch 3+ minutes of a 20-minute video, close the tab and reopen it: it resumes with the **Start over** toast, and Start over goes to 0:00.
+- [ ] A link with `&t=90` starts at 1:30, not at the saved spot.
+- [ ] A finished video starts from the beginning next time.
+- [ ] Focus mode via <kbd>Alt+Shift+F</kbd>: theatre switches on, the sidebar, comments and guide vanish, and the top bar reappears when you hover the top edge. Pressing it again restores everything. Home and search pages are unaffected.
 
 ## Stability
 - [ ] SPA navigation (click video → video → home → video) keeps working with no stuck mute or 16× playback.

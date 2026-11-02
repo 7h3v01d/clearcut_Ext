@@ -26,6 +26,41 @@
 
   let settings = CC.defaults.mergeSettings(null);
   let stats = CC.health.emptyStats();
+  let channels = {};
+  let channelCtx = null; // { channelId, author, rate } for the active YouTube tab
+
+  const speedLabel = (v) => (v ? `${v}×` : 'Don’t change');
+  const qualityLabel = (v) => (v ? (CC.defaults.QUALITIES.find((q) => q.id === v) || {}).label || v : 'Don’t change');
+  const SPEED_OPTS = [0, ...CC.defaults.SPEEDS].map((v) => ({ value: String(v), label: speedLabel(v) }));
+  const QUALITY_OPTS = [{ value: '', label: 'Don’t change' }, ...CC.defaults.QUALITIES.map((q) => ({ value: q.id, label: q.label }))];
+  const RESUME_OPTS = CC.defaults.RESUME_MINUTES.map((m) => ({ value: String(m), label: m ? `${m} min +` : 'Any length' }));
+
+  /** A labelled <select>. `bind` is either { key, num } for settings or { chan } for channel prefs. */
+  function select(label, options, bind, hint) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const lbl = document.createElement('div');
+    lbl.className = 'lbl';
+    const t = document.createElement('span');
+    t.textContent = label;
+    lbl.append(t);
+    if (hint) {
+      const h = document.createElement('small');
+      h.textContent = hint;
+      lbl.append(h);
+    }
+    const sel = document.createElement('select');
+    for (const o of options) {
+      const opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.label;
+      sel.append(opt);
+    }
+    if (bind.key) { sel.dataset.key = bind.key; if (bind.num) sel.dataset.num = '1'; }
+    if (bind.chan) sel.dataset.chan = bind.chan;
+    row.append(lbl, sel);
+    return row;
+  }
 
   function toggle(path, label, hint, extraClass) {
     const row = document.createElement('div');
@@ -57,6 +92,33 @@
       $('rows-sb').append(toggle('sbCategories.' + c.id, c.label, null, 'indent sb-cat'));
     }
     for (const r of DISTRACT_ROWS) $('rows-distract').append(toggle(r.key, r.label));
+
+    const pb = $('rows-playback');
+    pb.append(select('Default speed', SPEED_OPTS, { key: 'defaultSpeed', num: true }));
+    pb.append(select('Default quality', QUALITY_OPTS, { key: 'defaultQuality' }));
+    pb.append(toggle('resumeEnabled', 'Resume where I left off', 'Long videos pick up from your last position'));
+    pb.append(select('Remember videos', RESUME_OPTS, { key: 'resumeMinMinutes', num: true }));
+    const focus = toggle('focusMode', 'Focus mode', null);
+    const hint = document.createElement('small');
+    hint.append('Theatre, no clutter, auto-hide top bar · ');
+    const k = document.createElement('kbd');
+    k.textContent = 'Alt+Shift+F';
+    hint.append(k);
+    focus.querySelector('.lbl').append(hint);
+    pb.append(focus);
+    const forget = document.createElement('div');
+    forget.className = 'row';
+    const fl = document.createElement('span');
+    fl.textContent = 'Saved positions';
+    const fb = document.createElement('button');
+    fb.className = 'act';
+    fb.id = 'forget-resume';
+    fb.textContent = 'Forget all';
+    forget.append(fl, fb);
+    pb.append(forget);
+
+    $('rows-channel').append(select('Speed', SPEED_OPTS, { chan: 'speed' }));
+    $('rows-channel').append(select('Quality', QUALITY_OPTS, { chan: 'quality' }));
   }
 
   function read(path) {
@@ -66,6 +128,8 @@
 
   function renderSettings() {
     document.querySelectorAll('input[data-key]').forEach((el) => { el.checked = !!read(el.dataset.key); });
+    document.querySelectorAll('select[data-key]').forEach((el) => { el.value = String(read(el.dataset.key)); });
+    renderChannel();
     document.querySelectorAll('.sb-cat').forEach((el) => el.classList.toggle('dim', !settings.sponsorSkip));
     document.body.classList.toggle('off', !settings.enabled);
   }
@@ -122,13 +186,61 @@
     }
   }
 
+  function renderChannel() {
+    const box = $('channel');
+    if (!channelCtx || !channelCtx.channelId) { box.hidden = true; return; }
+    box.hidden = false;
+    $('chan-name').textContent = channelCtx.author || channelCtx.channelId;
+    const pref = channels[channelCtx.channelId] || {};
+    const sp = box.querySelector('select[data-chan="speed"]');
+    const q = box.querySelector('select[data-chan="quality"]');
+    // The first option of each mirrors the global default.
+    sp.options[0].textContent = `Default (${speedLabel(settings.defaultSpeed)})`;
+    q.options[0].textContent = `Default (${qualityLabel(settings.defaultQuality)})`;
+    sp.value = String(pref.speed || 0);
+    q.value = pref.quality || '';
+  }
+
+  async function saveChannel(field, value) {
+    const id = channelCtx && channelCtx.channelId;
+    if (!id) return;
+    const next = Object.assign({}, channels);
+    const merged = Object.assign({ name: channelCtx.author || '' }, next[id] || {}, { [field]: value });
+    const clean = CC.defaults.cleanChannelPref(merged);
+    if (clean) next[id] = clean; else delete next[id];
+    channels = next;
+    await chrome.storage.local.set({ channels: next });
+  }
+
+  async function loadChannelCtx() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || !/^https:\/\/www\.youtube\.com\/(watch|live\/)/.test(tab.url || '')) return;
+      const ctx = await chrome.tabs.sendMessage(tab.id, { type: 'ctx:get' });
+      if (ctx && ctx.channelId) { channelCtx = ctx; renderChannel(); }
+    } catch (_) { /* no content script in this tab (e.g. opened before install) */ }
+  }
+
   async function save() {
     await chrome.storage.local.set({ settings });
   }
 
   document.addEventListener('change', (e) => {
     const el = e.target;
-    if (!el.dataset || !el.dataset.key) return;
+    if (!el.dataset) return;
+    if (el.dataset.chan) {
+      const v = el.dataset.chan === 'speed' ? Number(el.value) : el.value;
+      saveChannel(el.dataset.chan, v);
+      return;
+    }
+    if (!el.dataset.key) return;
+    if (el.localName === 'select') {
+      settings = Object.assign({}, settings, { [el.dataset.key]: el.dataset.num ? Number(el.value) : el.value });
+      settings = CC.defaults.mergeSettings(settings);
+      renderSettings();
+      save();
+      return;
+    }
     const [a, b] = el.dataset.key.split('.');
     if (b) settings = Object.assign({}, settings, { [a]: Object.assign({}, settings[a], { [b]: el.checked }) });
     else settings = Object.assign({}, settings, { [a]: el.checked });
@@ -160,6 +272,13 @@
     }
   });
 
+  document.addEventListener('click', async (e) => {
+    if (e.target && e.target.id === 'forget-resume') {
+      await chrome.runtime.sendMessage({ type: 'resume:clear' });
+      flash('Positions forgotten.');
+    }
+  });
+
   $('reset').addEventListener('click', async () => {
     await chrome.runtime.sendMessage({ type: 'stats:reset' });
     flash('Stats cleared.');
@@ -169,17 +288,20 @@
     if (area !== 'local') return;
     if (changes.settings) { settings = CC.defaults.mergeSettings(changes.settings.newValue); renderSettings(); }
     if (changes.stats) { stats = changes.stats.newValue || CC.health.emptyStats(); }
+    if (changes.channels) { channels = changes.channels.newValue || {}; renderChannel(); }
     renderStats();
   });
 
   async function init() {
     $('ver').textContent = 'v' + chrome.runtime.getManifest().version;
     buildRows();
-    const r = await chrome.storage.local.get(['settings', 'stats']);
+    const r = await chrome.storage.local.get(['settings', 'stats', 'channels']);
     settings = CC.defaults.mergeSettings(r.settings);
     if (r.stats && r.stats.days) stats = r.stats;
+    if (r.channels && typeof r.channels === 'object') channels = r.channels;
     renderSettings();
     renderStats();
+    loadChannelCtx();
   }
 
   init();

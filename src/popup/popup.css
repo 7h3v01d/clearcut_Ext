@@ -91,3 +91,13 @@ button {
 }
 button:hover { border-color: var(--teal); color: var(--teal); }
 #msg { color: var(--phosphor); font-size: 10.5px; }
+
+select {
+  font: inherit; font-size: 11px; color: var(--text); background: var(--obsidian);
+  border: 1px solid var(--border); padding: 3px 4px; min-width: 120px; cursor: pointer;
+}
+select:hover, select:focus { border-color: var(--teal); outline: none; }
+.chan-name { color: var(--teal); font-weight: 600; margin: -2px 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rows.tight { padding: 0; }
+.row .act { font-size: 10.5px; }
+kbd { font: inherit; font-size: 10px; color: var(--amber); border: 1px solid var(--border); padding: 0 3px; }

@@ -13,6 +13,7 @@ const { JSDOM } = require('jsdom');
 
 const { createPlayerGuard } = require('../src/content/player-guard.js');
 const { createSponsorSkipper } = require('../src/content/sponsor-skipper.js');
+const { createToaster } = require('../src/content/toast.js');
 const sponsor = require('../src/lib/sponsor.js');
 const defaults = require('../src/lib/defaults.js');
 
@@ -166,6 +167,7 @@ function makeSkipper(doc, win, segments, extra) {
   const settings = defaults.mergeSettings(null);
   const skipper = createSponsorSkipper(Object.assign({
     doc, win, sponsor, report: (e) => events.push(e), getSettings: () => settings,
+    toaster: createToaster({ doc, win }),
     fetchSegments: async () => segments, labels: { sponsor: 'sponsor read' }
   }, extra));
   return { skipper, events, settings };
@@ -249,13 +251,16 @@ function chromeStub(initial) {
   const store = { settings: initial };
   const listeners = [];
   const sent = [];
+  const runtimeListeners = [];
   return {
     sent,
     store,
+    runtimeListeners,
     api: {
       storage: {
         local: {
-          get: async (k) => (typeof k === 'string' ? { [k]: store[k] } : Object.fromEntries(k.map((x) => [x, store[x]]))),
+          get: async (k) => (k == null ? { ...store } : typeof k === 'string' ? { [k]: store[k] } : Object.fromEntries(k.map((x) => [x, store[x]]))),
+          remove: async (k) => { for (const x of [].concat(k)) delete store[x]; },
           set: async (o) => {
             const changes = {};
             for (const [k, v] of Object.entries(o)) { changes[k] = { oldValue: store[k], newValue: v }; store[k] = v; }
@@ -265,7 +270,8 @@ function chromeStub(initial) {
         onChanged: { addListener: (fn) => listeners.push(fn) }
       },
       runtime: {
-        sendMessage: async (m) => { sent.push(m); return m.type === 'sb:get' ? { ok: true, segments: [] } : { ok: true }; }
+        sendMessage: async (m) => { sent.push(m); return m.type === 'sb:get' ? { ok: true, segments: [] } : { ok: true }; },
+        onMessage: { addListener: (fn) => { runtimeListeners.push(fn); } }
       }
     }
   };

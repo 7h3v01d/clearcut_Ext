@@ -1,11 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Clearcut",
-  "version": "0.1.0",
-  "description": "User-controlled YouTube ad blocking with a layered fallback ladder, sponsor skipping and distraction control.",
+  "version": "0.2.0",
+  "description": "User-controlled YouTube ad blocking with a layered fallback ladder, sponsor skipping, distraction control and playback memory.",
   "homepage_url": "https://github.com/7h3v01d/clearcut",
   "minimum_chrome_version": "111",
-  "permissions": ["storage", "declarativeNetRequest"],
+  "permissions": [
+    "storage",
+    "declarativeNetRequest"
+  ],
   "host_permissions": [
     "*://www.youtube.com/*",
     "https://sponsor.ajay.app/*"
@@ -15,19 +18,29 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*"],
-      "js": ["src/main/data-shield.js"],
+      "matches": [
+        "*://www.youtube.com/*"
+      ],
+      "js": [
+        "src/main/data-shield.js",
+        "src/main/player-bridge.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     },
     {
-      "matches": ["*://www.youtube.com/*"],
+      "matches": [
+        "*://www.youtube.com/*"
+      ],
       "js": [
         "src/lib/defaults.js",
         "src/lib/selectors.js",
         "src/lib/sponsor.js",
+        "src/content/rpc.js",
+        "src/content/toast.js",
         "src/content/player-guard.js",
         "src/content/sponsor-skipper.js",
+        "src/content/playback.js",
         "src/content/main.js"
       ],
       "run_at": "document_start"
@@ -35,7 +48,11 @@
   ],
   "declarative_net_request": {
     "rule_resources": [
-      { "id": "ad_network", "enabled": true, "path": "rules/ad-network.json" }
+      {
+        "id": "ad_network",
+        "enabled": true,
+        "path": "rules/ad-network.json"
+      }
     ]
   },
   "action": {
@@ -53,5 +70,13 @@
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "commands": {
+    "toggle-focus": {
+      "suggested_key": {
+        "default": "Alt+Shift+F"
+      },
+      "description": "Toggle focus mode"
+    }
   }
 }

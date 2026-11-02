@@ -2,8 +2,8 @@
 // Copyright 2026 Leon Priest (GitHub: 7h3v01d)
 //
 // Isolated-world entry point. Wires settings, the cosmetic stylesheet, the
-// bridge from the MAIN-world data shield, layer 3, sponsor skipping and the
-// event batch that feeds the health log.
+// bridges to the MAIN world (data shield reports, player RPC), layer 3,
+// sponsor skipping, playback memory and the event batch for the health log.
 
 (function () {
   'use strict';
@@ -19,6 +19,7 @@
   let l2Seen = new WeakSet();
   let l2Pending = 0;
   let currentVideo = null;
+  let channels = {};
 
   // ---- event batching → service worker ---------------------------------
   function report(ev) {
@@ -66,9 +67,12 @@
     window.postMessage({ [MSG_TAG]: 1, dir: 'down', enabled: settings.enabled && settings.layerData }, location.origin);
   }
 
+  const rpc = CC.rpc.createRpc({ win: window });
+
   window.addEventListener('message', (e) => {
     const d = e.data;
     if (e.source !== window || !d || d[MSG_TAG] !== 1 || d.dir !== 'up') return;
+    if (rpc.handleReply(d)) return;
     if (d.t !== 'l1') return;
     report({
       t: 'l1',
@@ -84,6 +88,8 @@
 
   const guard = CC.playerGuard.createPlayerGuard({ doc: document, win: window, report, getSettings, getVideoId });
 
+  const toaster = CC.toast.createToaster({ doc: document, win: window });
+
   const labels = {};
   for (const c of CC.defaults.SB_CATEGORIES) labels[c.id] = c.label.toLowerCase();
 
@@ -94,6 +100,7 @@
     report,
     getSettings,
     labels,
+    toaster,
     isInAd: () => guard.isInAd(),
     fetchSegments: async (videoId, categories) => {
       const res = await chrome.runtime.sendMessage({ type: 'sb:get', videoId, categories });
@@ -101,13 +108,43 @@
     }
   });
 
+  const playback = CC.playback.createPlayback({
+    doc: document,
+    win: window,
+    rpc,
+    toaster,
+    getSettings,
+    getChannels: () => channels,
+    adShowing: () => guard.adShowing(),
+    storage: {
+      get: async (k) => (await chrome.storage.local.get(k))[k],
+      set: (k, v) => chrome.storage.local.set({ [k]: v }).catch(() => {}),
+      remove: (k) => chrome.storage.local.remove(k).catch(() => {})
+    }
+  });
+
+  function cleanChannels(raw) {
+    const out = {};
+    if (raw && typeof raw === 'object') {
+      for (const [id, p] of Object.entries(raw)) {
+        const c = CC.defaults.cleanChannelPref(p);
+        if (c) out[id] = c;
+      }
+    }
+    return out;
+  }
+
   function onNavigate() {
     const id = getVideoId();
     if (id !== currentVideo) {
       currentVideo = id;
       if (id) report({ t: 'video', videoId: id });
     }
+    // Lets the focus-mode CSS scope itself to watch pages.
+    if (id) document.documentElement.setAttribute('data-clearcut-page', 'watch');
+    else document.documentElement.removeAttribute('data-clearcut-page');
     skipper.setVideo(id);
+    playback.setVideo(id);
     countLeakedAds();
   }
 
@@ -125,18 +162,32 @@
   }
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes.settings) applySettings(changes.settings.newValue, settings);
+    if (area !== 'local') return;
+    if (changes.settings) applySettings(changes.settings.newValue, settings);
+    if (changes.channels) { channels = cleanChannels(changes.channels.newValue); playback.applyNow(); }
+    if (changes.settings && settings.focusMode) guard.sweep();
+  });
+
+  // The popup asks which channel is playing so it can show "This channel".
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (!msg || msg.type !== 'ctx:get') return false;
+    playback.describe().then(sendResponse, () => sendResponse(null));
+    return true;
   });
 
   // ---- boot ----------------------------------------------------------------
   applyCss();
   pushConfigDown();
-  chrome.storage.local.get('settings').then((r) => applySettings(r.settings, null)).catch(() => {});
+  chrome.storage.local.get(['settings', 'channels']).then((r) => {
+    channels = cleanChannels(r.channels);
+    applySettings(r.settings, null);
+  }).catch(() => {});
 
   function boot() {
     applyCss(); // <head> exists now
     guard.start();
     skipper.start();
+    playback.start();
     onNavigate();
     document.addEventListener('yt-navigate-finish', onNavigate);
     document.addEventListener('yt-page-data-updated', () => countLeakedAds());
