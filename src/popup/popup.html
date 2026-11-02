@@ -1,0 +1,73 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Leon Priest (GitHub: 7h3v01d) -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Clearcut</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="mark"></span>
+      <span class="name">CLEARCUT</span>
+      <span class="ver" id="ver"></span>
+    </div>
+    <label class="switch" title="Master switch">
+      <input type="checkbox" data-key="enabled">
+      <span></span>
+    </label>
+  </header>
+
+  <section class="health" id="health" data-level="idle">
+    <div class="dot"></div>
+    <div>
+      <div class="h-title" id="h-title">Waiting for a video</div>
+      <div class="h-detail" id="h-detail"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Today</h2>
+    <div class="grid">
+      <div class="stat"><b id="s-l1">0</b><span>L1 stripped</span></div>
+      <div class="stat"><b id="s-l2">0</b><span>L2 hidden</span></div>
+      <div class="stat"><b id="s-l3">0</b><span>L3 neutralised</span></div>
+      <div class="stat"><b id="s-walls">0</b><span>Walls removed</span></div>
+      <div class="stat"><b id="s-sb">0</b><span>Segments skipped</span></div>
+      <div class="stat"><b id="s-saved">0s</b><span>Time saved</span></div>
+    </div>
+  </section>
+
+  <details open>
+    <summary>Ad ladder</summary>
+    <div class="rows" id="rows-ads"></div>
+  </details>
+
+  <details>
+    <summary>Sponsor skipping</summary>
+    <div class="rows" id="rows-sb"></div>
+  </details>
+
+  <details>
+    <summary>Distractions</summary>
+    <div class="rows" id="rows-distract"></div>
+  </details>
+
+  <details>
+    <summary>Recent events</summary>
+    <ol class="log" id="log"></ol>
+  </details>
+
+  <footer>
+    <button id="export">Copy diagnostics</button>
+    <button id="reset">Reset stats</button>
+    <span id="msg"></span>
+  </footer>
+
+  <script src="../lib/defaults.js"></script>
+  <script src="../lib/health.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

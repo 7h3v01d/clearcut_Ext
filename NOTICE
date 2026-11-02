@@ -1,0 +1,8 @@
+Clearcut
+Copyright 2026 Leon Priest (GitHub: 7h3v01d)
+
+Licensed under the Apache License, Version 2.0.
+
+Sponsor-segment data is fetched at runtime from the SponsorBlock project
+(https://sponsor.ajay.app), licensed CC BY-NC-SA 4.0. No SponsorBlock data or
+code is bundled with this extension.

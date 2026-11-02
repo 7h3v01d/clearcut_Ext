@@ -1,0 +1,18 @@
+{
+  "name": "clearcut",
+  "version": "0.1.0",
+  "description": "User-controlled YouTube ad blocking for Vivaldi/Chromium (MV3).",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  },
+  "author": "Leon Priest (https://github.com/7h3v01d)",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "jsdom": "^24.1.3"
+  },
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/7h3v01d/clearcut.git"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "Clearcut",
+  "version": "0.1.0",
+  "description": "User-controlled YouTube ad blocking with a layered fallback ladder, sponsor skipping and distraction control.",
+  "homepage_url": "https://github.com/7h3v01d/clearcut",
+  "minimum_chrome_version": "111",
+  "permissions": ["storage", "declarativeNetRequest"],
+  "host_permissions": [
+    "*://www.youtube.com/*",
+    "https://sponsor.ajay.app/*"
+  ],
+  "background": {
+    "service_worker": "src/background/sw.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": ["src/main/data-shield.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": [
+        "src/lib/defaults.js",
+        "src/lib/selectors.js",
+        "src/lib/sponsor.js",
+        "src/content/player-guard.js",
+        "src/content/sponsor-skipper.js",
+        "src/content/main.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      { "id": "ad_network", "enabled": true, "path": "rules/ad-network.json" }
+    ]
+  },
+  "action": {
+    "default_title": "Clearcut",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
