@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Clearcut",
-  "version": "0.2.0",
-  "description": "User-controlled YouTube ad blocking with a layered fallback ladder, sponsor skipping, distraction control and playback memory.",
+  "version": "0.3.0",
+  "description": "User-controlled YouTube ad blocking with a layered fallback ladder, sponsor skipping, distraction control, playback memory and Shorts auto-scroll.",
   "homepage_url": "https://github.com/7h3v01d/clearcut",
   "minimum_chrome_version": "111",
   "permissions": [
@@ -41,6 +41,7 @@
         "src/content/player-guard.js",
         "src/content/sponsor-skipper.js",
         "src/content/playback.js",
+        "src/content/shorts.js",
         "src/content/main.js"
       ],
       "run_at": "document_start"

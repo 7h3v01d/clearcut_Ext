@@ -123,6 +123,8 @@
     }
   });
 
+  const shorts = CC.shorts.createShortsScroller({ doc: document, win: window, getSettings, report });
+
   function cleanChannels(raw) {
     const out = {};
     if (raw && typeof raw === 'object') {
@@ -188,6 +190,7 @@
     guard.start();
     skipper.start();
     playback.start();
+    shorts.start();
     onNavigate();
     document.addEventListener('yt-navigate-finish', onNavigate);
     document.addEventListener('yt-page-data-updated', () => countLeakedAds());

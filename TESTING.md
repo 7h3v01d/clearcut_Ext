@@ -1,4 +1,4 @@
-# Clearcut: real-browser soak checklist (v0.2.0)
+# Clearcut: real-browser soak checklist (v0.3.0)
 
 Run on Windows + Vivaldi (and Chrome). Before each pass, open the popup and **Reset stats**.
 
@@ -28,6 +28,15 @@ Run on Windows + Vivaldi (and Chrome). Before each pass, open the popup and **Re
 - [ ] A link with `&t=90` starts at 1:30, not at the saved spot.
 - [ ] A finished video starts from the beginning next time.
 - [ ] Focus mode via <kbd>Alt+Shift+F</kbd>: theatre switches on, the sidebar, comments and guide vanish, and the top bar reappears when you hover the top edge. Pressing it again restores everything. Home and search pages are unaffected.
+
+## Shorts (v0.3)
+- [ ] Turn on **Auto-scroll Shorts** and open any Short: when it finishes, the next one starts on its own.
+- [ ] With **Twice** selected, each Short plays through two times before moving on.
+- [ ] Pause a Short: it stays put. Open its comments: it loops without advancing until you close them.
+- [ ] Switch tabs while a Short plays: it doesn't race through the feed in the background.
+- [ ] Drag a Short back to the start mid-way: it doesn't advance.
+- [ ] Ad Shorts (the "Sponsored" badge) are skipped straight away, and **Recent events** shows "ad Short skipped". No real Short is skipped right after one.
+- [ ] Normal watch pages are unaffected.
 
 ## Stability
 - [ ] SPA navigation (click video → video → home → video) keeps working with no stuck mute or 16× playback.

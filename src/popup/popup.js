@@ -117,6 +117,12 @@
     forget.append(fl, fb);
     pb.append(forget);
 
+    const sh = $('rows-shorts');
+    sh.append(toggle('shortsAutoScroll', 'Auto-scroll Shorts', 'Next Short when this one finishes'));
+    sh.append(select('Play each Short', CC.defaults.SHORTS_PLAYS.map((n) => ({
+      value: String(n), label: n === 1 ? 'Once' : n === 2 ? 'Twice' : `${n} times`
+    })), { key: 'shortsPlays', num: true }, 'Pauses while comments are open or you pause'));
+
     $('rows-channel').append(select('Speed', SPEED_OPTS, { chan: 'speed' }));
     $('rows-channel').append(select('Quality', QUALITY_OPTS, { chan: 'quality' }));
   }
@@ -179,7 +185,7 @@
         if (ev.kind === 'wall') return 'wall stripped from data';
         return `${ev.removed} feed ad(s) stripped`;
       case 'l2': return `${ev.hidden} ad slot(s) hidden`;
-      case 'l3': return `ad neutralised · ${ev.videoId || '?'}`;
+      case 'l3': return ev.shorts ? 'ad Short skipped' : `ad neutralised · ${ev.videoId || '?'}`;
       case 'wall': return 'enforcement wall dismissed';
       case 'sb': return `${ev.category} · ${CC.health.formatDuration(ev.seconds)}`;
       default: return '';

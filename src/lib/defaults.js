@@ -31,6 +31,7 @@
   ];
 
   const RESUME_MINUTES = [0, 5, 10, 20];
+  const SHORTS_PLAYS = [1, 2, 3];
 
   const DEFAULT_SETTINGS = Object.freeze({
     enabled: true,
@@ -64,7 +65,10 @@
     defaultQuality: '',   // '' = don't change
     resumeEnabled: true,
     resumeMinMinutes: 5,  // only remember videos at least this long
-    focusMode: false
+    focusMode: false,
+    // Shorts
+    shortsAutoScroll: false,
+    shortsPlays: 1        // plays before moving on
   });
 
   const isSpeed = (v) => v === 0 || SPEEDS.includes(v);
@@ -87,6 +91,7 @@
     if (!isSpeed(out.defaultSpeed)) out.defaultSpeed = DEFAULT_SETTINGS.defaultSpeed;
     if (!isQuality(out.defaultQuality)) out.defaultQuality = DEFAULT_SETTINGS.defaultQuality;
     if (!RESUME_MINUTES.includes(out.resumeMinMinutes)) out.resumeMinMinutes = DEFAULT_SETTINGS.resumeMinMinutes;
+    if (!SHORTS_PLAYS.includes(out.shortsPlays)) out.shortsPlays = DEFAULT_SETTINGS.shortsPlays;
     return out;
   }
 
@@ -99,7 +104,7 @@
     return { name: typeof p.name === 'string' ? p.name.slice(0, 100) : '', speed, quality };
   }
 
-  const api = { DEFAULT_SETTINGS, SB_CATEGORIES, SPEEDS, QUALITIES, RESUME_MINUTES, mergeSettings, cleanChannelPref, isSpeed, isQuality };
+  const api = { DEFAULT_SETTINGS, SB_CATEGORIES, SPEEDS, QUALITIES, RESUME_MINUTES, SHORTS_PLAYS, mergeSettings, cleanChannelPref, isSpeed, isQuality };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (globalThis.Clearcut = globalThis.Clearcut || {}).defaults = api;
 })();

@@ -41,6 +41,14 @@ The player's own methods (quality, channel info) only exist in the page's JavaSc
 - **Resume position:** videos at least as long as your minimum (default 5 min) remember where you stopped. A **Start over** toast appears when one resumes. Clearcut skips resuming when the link has a start time (`&t=`) or YouTube has already resumed. Finished videos are forgotten, and it keeps the newest 300 positions for at most 90 days. **Forget all** clears them.
 - **Focus mode** (<kbd>Alt+Shift+F</kbd>, rebindable at `vivaldi://extensions/shortcuts`): theatre mode once per video, related videos, comments, the guide and merch hidden, and the top bar slides away until you touch the top edge. Watch pages only.
 
+### Added in v0.3
+
+- **Shorts auto-scroll** (popup → **Shorts**, off by default): when a Short finishes it moves to the next one, after one, two or three plays.
+  - Shorts loop instead of ending, so a play counts when playback wraps from the end back to the start. A manual drag back to the start mid-way doesn't count.
+  - It stays put while you've paused, while comments or the description are open, or while the tab is hidden.
+  - It advances with YouTube's own Next button, falling back to the ↓ key and then to scrolling.
+- **Ad Shorts are skipped** as part of layer 3, even with auto-scroll off. They're logged as "ad Short skipped". After any skip it waits 1.5 s for YouTube to swap the active reel, so a stale page can't cost you a real Short.
+
 ## Install (unpacked)
 
 1. `vivaldi://extensions` (or `chrome://extensions`), then turn on **Developer mode**.
@@ -56,7 +64,7 @@ npm install
 test.bat
 ```
 
-77 tests: unit tests (pruning, selectors, SponsorBlock logic, health status, quality selection), jsdom integration tests (layer 3, wall dismissal, sponsor skip/undo, playback memory and resume, focus mode, player bridge RPC, a full content-script boot, the popup) and service worker tests with a stubbed `chrome` API.
+91 tests: unit tests (pruning, selectors, SponsorBlock logic, health status, quality selection), jsdom integration tests (layer 3, wall dismissal, sponsor skip/undo, playback memory and resume, focus mode, Shorts auto-scroll and ad-Short skipping, player bridge RPC, a full content-script boot, the popup) and service worker tests with a stubbed `chrome` API.
 
 `package.bat` builds `dist\clearcut-<version>.zip` containing only the extension files.
 
@@ -69,7 +77,8 @@ src/main/data-shield.js      L1 data shield (MAIN world, self-contained)
 src/main/player-bridge.js    player RPC: channel context, quality (MAIN world)
 src/lib/                     defaults, selectors, sponsor, health (pure, testable)
 src/content/                 player-guard (L3 + wall + autoplay + theatre), sponsor-skipper,
-                             playback (speed/quality/resume), toast, rpc, main (wiring)
+                             playback (speed/quality/resume), shorts (auto-scroll + ad skip),
+                             toast, rpc, main (wiring)
 src/background/sw.js         settings, ruleset toggle, SponsorBlock fetch/cache, health writer,
                              resume pruning, focus-mode shortcut
 src/popup/                   status, counters, This channel, toggles
