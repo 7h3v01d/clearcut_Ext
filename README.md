@@ -49,6 +49,20 @@ The player's own methods (quality, channel info) only exist in the page's JavaSc
   - It advances with YouTube's own Next button, falling back to the ↓ key and then to scrolling.
 - **Ad Shorts are skipped** as part of layer 3, even with auto-scroll off. They're logged as "ad Short skipped". After any skip it waits 1.5 s for YouTube to swap the active reel, so a stale page can't cost you a real Short.
 
+### Added in v0.4: power keys
+
+These work on watch pages, using keys YouTube leaves unbound. They're ignored while you're typing, with Ctrl/Alt/Meta held, or while an ad shows. Turn them off under popup → **Playback**.
+
+| Key | Does |
+|---|---|
+| <kbd>]</kbd> / <kbd>[</kbd> | Speed ±0.25, from 0.25× up to **4×** (past YouTube's 2× cap). Hold to repeat. |
+| <kbd>\\</kbd> | Speed back to 1× |
+| <kbd>A</kbd> | Set loop start (clears any loop) |
+| <kbd>B</kbd> | Set loop end and start looping A–B, with markers on the progress bar. Press <kbd>B</kbd> again to stop. |
+| <kbd>Shift</kbd>+<kbd>S</kbd> | Save the current frame as a full-resolution PNG named `<title> @ 1m23s.png` |
+
+YouTube's own <kbd>,</kbd> / <kbd>.</kbd> already step one frame while paused, so Clearcut doesn't duplicate them. A loop is cleared when you move to another video.
+
 ## Install (unpacked)
 
 1. `vivaldi://extensions` (or `chrome://extensions`), then turn on **Developer mode**.
@@ -64,7 +78,7 @@ npm install
 test.bat
 ```
 
-91 tests: unit tests (pruning, selectors, SponsorBlock logic, health status, quality selection), jsdom integration tests (layer 3, wall dismissal, sponsor skip/undo, playback memory and resume, focus mode, Shorts auto-scroll and ad-Short skipping, player bridge RPC, a full content-script boot, the popup) and service worker tests with a stubbed `chrome` API.
+105 tests: unit tests (pruning, selectors, SponsorBlock logic, health status, quality selection), jsdom integration tests (layer 3, wall dismissal, sponsor skip/undo, playback memory and resume, focus mode, Shorts auto-scroll and ad-Short skipping, power keys, player bridge RPC, a full content-script boot, the popup) and service worker tests with a stubbed `chrome` API.
 
 `package.bat` builds `dist\clearcut-<version>.zip` containing only the extension files.
 
@@ -78,6 +92,7 @@ src/main/player-bridge.js    player RPC: channel context, quality (MAIN world)
 src/lib/                     defaults, selectors, sponsor, health (pure, testable)
 src/content/                 player-guard (L3 + wall + autoplay + theatre), sponsor-skipper,
                              playback (speed/quality/resume), shorts (auto-scroll + ad skip),
+                             power-keys (speed, A–B loop, screenshot),
                              toast, rpc, main (wiring)
 src/background/sw.js         settings, ruleset toggle, SponsorBlock fetch/cache, health writer,
                              resume pruning, focus-mode shortcut

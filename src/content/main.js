@@ -125,6 +125,11 @@
 
   const shorts = CC.shorts.createShortsScroller({ doc: document, win: window, getSettings, report });
 
+  const keys = CC.powerKeys.createPowerKeys({
+    doc: document, win: window, getSettings, toaster,
+    adShowing: () => guard.adShowing()
+  });
+
   function cleanChannels(raw) {
     const out = {};
     if (raw && typeof raw === 'object') {
@@ -140,6 +145,7 @@
     const id = getVideoId();
     if (id !== currentVideo) {
       currentVideo = id;
+      keys.reset(); // an A–B loop belongs to the video it was set on
       if (id) report({ t: 'video', videoId: id });
     }
     // Lets the focus-mode CSS scope itself to watch pages.
@@ -191,6 +197,7 @@
     skipper.start();
     playback.start();
     shorts.start();
+    keys.start();
     onNavigate();
     document.addEventListener('yt-navigate-finish', onNavigate);
     document.addEventListener('yt-page-data-updated', () => countLeakedAds());

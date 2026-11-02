@@ -66,6 +66,7 @@
     resumeEnabled: true,
     resumeMinMinutes: 5,  // only remember videos at least this long
     focusMode: false,
+    powerKeys: true,      // ] [ \ speed · A/B loop · Shift+S screenshot
     // Shorts
     shortsAutoScroll: false,
     shortsPlays: 1        // plays before moving on

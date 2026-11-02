@@ -1,4 +1,4 @@
-# Clearcut: real-browser soak checklist (v0.3.0)
+# Clearcut: real-browser soak checklist (v0.4.0)
 
 Run on Windows + Vivaldi (and Chrome). Before each pass, open the popup and **Reset stats**.
 
@@ -37,6 +37,14 @@ Run on Windows + Vivaldi (and Chrome). Before each pass, open the popup and **Re
 - [ ] Drag a Short back to the start mid-way: it doesn't advance.
 - [ ] Ad Shorts (the "Sponsored" badge) are skipped straight away, and **Recent events** shows "ad Short skipped". No real Short is skipped right after one.
 - [ ] Normal watch pages are unaffected.
+
+## Power keys (v0.4)
+- [ ] <kbd>]</kbd> repeatedly: speed goes past 2× up to 4× with an on-screen readout. <kbd>[</kbd> goes down to 0.25×, and <kbd>\\</kbd> returns to 1×. Audio stays pitch-correct.
+- [ ] Typing ] [ A B into search or a comment types normally and doesn't trigger anything.
+- [ ] <kbd>A</kbd> at 1:00, <kbd>B</kbd> at 1:30: it jumps to 1:00, loops cleanly, and shows a teal span on the progress bar. <kbd>B</kbd> again stops the loop and removes the span.
+- [ ] Set a loop, then click another video: the loop is gone.
+- [ ] <kbd>Shift</kbd>+<kbd>S</kbd> on a 1080p/4K video downloads a PNG at the video's native size with the title and timestamp in the name. Check it also works in fullscreen.
+- [ ] YouTube's own keys (K/J/L, F, M, C, `,`/`.` frame step, Shift+</>) still behave normally.
 
 ## Stability
 - [ ] SPA navigation (click video → video → home → video) keeps working with no stuck mute or 16× playback.

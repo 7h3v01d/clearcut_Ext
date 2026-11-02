@@ -106,6 +106,16 @@
     hint.append(k);
     focus.querySelector('.lbl').append(hint);
     pb.append(focus);
+    const pk = toggle('powerKeys', 'Power keys', null);
+    const legend = document.createElement('small');
+    for (const [key, what] of [[']  [', 'speed'], ['\\', '1×'], ['A  B', 'loop'], ['Shift+S', 'frame']]) {
+      const kb = document.createElement('kbd');
+      kb.textContent = key;
+      legend.append(kb, ` ${what}  `);
+    }
+    pk.querySelector('.lbl').append(legend);
+    pb.append(pk);
+
     const forget = document.createElement('div');
     forget.className = 'row';
     const fl = document.createElement('span');
